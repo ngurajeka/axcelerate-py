@@ -1,5 +1,5 @@
 from axcelerate.client import Client
-from axcelerate.exceptions import CreateContactFailedException
+from axcelerate.exceptions import CreateContactFailedException, CreateContactNoteFailedException
 
 
 class Contact(object):
@@ -45,5 +45,7 @@ class ContactAPI(Client):
         }
         response = self.post('contact/note', payload)
         json_response = response.json()
-        print(response.status_code)
+        if response.status_code != 200:
+            raise CreateContactNoteFailedException(json_response.get('MESSAGES'))
+
         return int(json_response.get('NOTEID'))
