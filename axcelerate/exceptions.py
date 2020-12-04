@@ -1,0 +1,2 @@
+class CreateContactFailedException(Exception):
+    pass
