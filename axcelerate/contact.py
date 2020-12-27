@@ -1,5 +1,8 @@
+import datetime
 from axcelerate.client import Client
-from axcelerate.exceptions import CreateContactFailedException, CreateContactNoteFailedException
+from axcelerate.exceptions import CreateContactFailedException, CreateContactNoteFailedException, \
+    CreateContactPortfolioFailedException
+from axcelerate.file import File
 
 
 class Contact(object):
@@ -8,6 +11,12 @@ class Contact(object):
     email_address: str = ''
     mobile_phone: str = ''
     categories: list = []
+    contact_active: bool = True
+    dob: datetime.date = None
+    address1: str = None
+    address2: str = None
+    country: str = None
+    source_code_id: int = None
 
 
 class ContactAPI(Client):
@@ -21,6 +30,12 @@ class ContactAPI(Client):
         contact.email_address = json_response.get('EMAILADDRESS')
         contact.mobile_phone = json_response.get('MOBILEPHONE')
         contact.categories = json_response.get('CATEGORYIDS', [])
+        contact.source_code_id = json_response.get('SOURCECODEID', None)
+        contact.contact_active = json_response.get('CONTACTACTIVE', True)
+        contact.dob = json_response.get('DOB', None)
+        contact.country = json_response.get('COUNTRY', None)
+        contact.address1 = json_response.get('ADDRESS1', None)
+        contact.address2 = json_response.get('ADDRESS2', None)
         return contact
 
     def add_contact(self, contact: Contact) -> int:
@@ -30,6 +45,12 @@ class ContactAPI(Client):
             'emailAddress': contact.email_address,
             'mobilephone': contact.mobile_phone,
             'categoryIDs': contact.categories,
+            'SourceCodeID': contact.source_code_id,
+            'ContactActive': contact.contact_active,
+            'dob': contact.dob,
+            'country': contact.country,
+            'address1': contact.address1,
+            'address2': contact.address2,
         }
         response = self.post('contact', payload)
         json_response = response.json()
@@ -49,3 +70,25 @@ class ContactAPI(Client):
             raise CreateContactNoteFailedException(json_response.get('MESSAGES'))
 
         return int(json_response.get('NOTEID'))
+
+    def add_portfolio(self, contact_id, portfolio_type: int):
+        payload = {
+            'contactID': contact_id,
+            'portfolioTypeID': portfolio_type,
+        }
+        response = self.post('contact/portfolio', payload)
+        json_response = response.json()
+        if response.status_code != 200:
+            raise CreateContactPortfolioFailedException(json_response.get('MESSAGES'))
+
+        return int(json_response.get('PORTFOLIOID'))
+
+    def add_portfolio_file(self, contact_id: int, portfolio_id: int, portfolio: File):
+        payload = {
+            'contactID': contact_id,
+            'portfolioID': portfolio_id,
+        }
+        response = self.upload('contact/portfolio/file', payload, portfolio)
+        json_response = response.json()
+        if response.status_code != 200:
+            raise CreateContactPortfolioFailedException(json_response.get('MESSAGES'))

@@ -4,3 +4,7 @@ class CreateContactFailedException(Exception):
 
 class CreateContactNoteFailedException(Exception):
     pass
+
+
+class CreateContactPortfolioFailedException(Exception):
+    pass
