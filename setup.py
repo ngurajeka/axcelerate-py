@@ -6,12 +6,13 @@ with open('README.md', 'r') as fh:
 install_requires = ['requests==2.25.0', ]
 
 tests_require = [
+    'requests',
     'pytest==6.1.2',
 ]
 
 setuptools.setup(
     name='axcelerate',
-    version='2.0.0',
+    version='2.1.0',
     description='Axcelerate API Wrapper',
     url='https://github.com/ngurajeka/axcelerate-py',
     author='Ady Rahmat MA',

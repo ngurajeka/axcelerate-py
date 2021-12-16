@@ -17,6 +17,7 @@ class Contact(object):
     address2: str = None
     country: str = None
     source_code_id: int = None
+    custom_fields = {}
 
 
 class ContactAPI(Client):
@@ -52,6 +53,11 @@ class ContactAPI(Client):
             'address1': contact.address1,
             'address2': contact.address2,
         }
+
+        for field, value in contact.custom_fields.items():
+            key = 'customField_%s' % field
+            payload[key] = value
+
         response = self.post('contact', payload)
         json_response = response.json()
         if response.status_code != 200:

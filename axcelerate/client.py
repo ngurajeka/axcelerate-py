@@ -11,6 +11,10 @@ class Client(object):
     def __init__(self, wstoken: str, apitoken: str):
         self.wstoken = wstoken
         self.apitoken = apitoken
+        self.base_url = BASE_URL
+
+    def set_base_url(self, base_url):
+        self.base_url = base_url
 
     @property
     def headers(self):
@@ -20,15 +24,15 @@ class Client(object):
         }
 
     def get(self, url: str) -> Response:
-        url = '%s/%s' % (BASE_URL, url)
+        url = '%s/%s' % (self.base_url, url)
         return requests.get(url, headers=self.headers)
 
     def post(self, url: str, payload: dict) -> Response:
-        url = '%s/%s' % (BASE_URL, url)
+        url = '%s/%s' % (self.base_url, url)
         return requests.post(url, data=payload, headers=self.headers)
 
     def upload(self, url: str, payload: dict, file: File) -> Response:
-        url = '%s/%s' % (BASE_URL, url)
+        url = '%s/%s' % (self.base_url, url)
         files = {
             'addFile': (
                 file.filename,
