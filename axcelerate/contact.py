@@ -39,7 +39,7 @@ class ContactAPI(Client):
         contact.address2 = json_response.get('ADDRESS2', None)
         return contact
 
-    def search_contact(self, params) -> list[Contact]:
+    def search_contact(self, params) -> list:
         response = self.get('contacts/search', params=params)
         responses = response.json()
         contacts = []
