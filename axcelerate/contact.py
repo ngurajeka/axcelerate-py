@@ -6,6 +6,7 @@ from axcelerate.file import File
 
 
 class Contact(object):
+    id: int = None
     given_name: str = ''
     surname: str = ''
     email_address: str = ''
@@ -22,10 +23,9 @@ class Contact(object):
 
 class ContactAPI(Client):
 
-    def get_contact(self, contact_id) -> Contact:
-        response = self.get('contact/%d' % contact_id)
-        json_response = response.json()
+    def _build_response(self, json_response):
         contact = Contact()
+        contact.id = json_response.get('CONTACTID')
         contact.given_name = json_response.get('GIVENNAME')
         contact.surname = json_response.get('SURNAME')
         contact.email_address = json_response.get('EMAILADDRESS')
@@ -39,24 +39,17 @@ class ContactAPI(Client):
         contact.address2 = json_response.get('ADDRESS2', None)
         return contact
 
+    def get_contact(self, contact_id) -> Contact:
+        response = self.get('contact/%d' % contact_id)
+        json_response = response.json()
+        return self._build_response(json_response)
+
     def search_contact(self, params) -> list:
         response = self.get('contacts/search', params=params)
         responses = response.json()
         contacts = []
         for json_response in responses:
-            contact = Contact()
-            contact.given_name = json_response.get('GIVENNAME')
-            contact.surname = json_response.get('SURNAME')
-            contact.email_address = json_response.get('EMAILADDRESS')
-            contact.mobile_phone = json_response.get('MOBILEPHONE')
-            contact.categories = json_response.get('CATEGORYIDS', [])
-            contact.source_code_id = json_response.get('SOURCECODEID', None)
-            contact.contact_active = json_response.get('CONTACTACTIVE', True)
-            contact.dob = json_response.get('DOB', None)
-            contact.country = json_response.get('COUNTRY', None)
-            contact.address1 = json_response.get('ADDRESS1', None)
-            contact.address2 = json_response.get('ADDRESS2', None)
-            contacts.append(contact)
+            contacts.append(self._build_response(json_response))
         return contacts
 
     def add_contact(self, contact: Contact) -> int:
