@@ -1,3 +1,7 @@
+class ContactNotFoundException(Exception):
+    pass
+
+
 class CreateContactFailedException(Exception):
     pass
 

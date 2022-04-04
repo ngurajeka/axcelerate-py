@@ -1,6 +1,6 @@
 import datetime
 from axcelerate.client import Client
-from axcelerate.exceptions import CreateContactFailedException, CreateContactNoteFailedException, \
+from axcelerate.exceptions import ContactNotFoundException, CreateContactFailedException, CreateContactNoteFailedException, \
     CreateContactPortfolioFailedException
 from axcelerate.file import File
 
@@ -41,11 +41,16 @@ class ContactAPI(Client):
 
     def get_contact(self, contact_id) -> Contact:
         response = self.get('contact/%d' % contact_id)
+        if response.status_code != 200:
+            raise ContactNotFoundException()
+
         json_response = response.json()
         return self._build_response(json_response)
 
     def search_contact(self, params) -> list:
         response = self.get('contacts/search', params=params)
+        if response.status_code != 200:
+            return []
         responses = response.json()
         contacts = []
         for json_response in responses:
