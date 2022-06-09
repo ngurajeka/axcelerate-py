@@ -1,8 +1,11 @@
 import datetime
+
 from axcelerate.client import Client
 from axcelerate.exceptions import CreateContactFailedException, CreateContactNoteFailedException, \
     CreateContactPortfolioFailedException
 from axcelerate.file import File
+from pydantic import BaseModel, Field
+from typing import List, Optional
 
 
 class Contact(object):
@@ -18,6 +21,21 @@ class Contact(object):
     country: str = None
     source_code_id: int = None
     custom_fields = {}
+
+
+class Note(BaseModel):
+    id : int = Field(..., alias='ID'),
+    row_id : int = Field(..., alias='ROWID'),
+    text : str = Field(..., alias='TEXT')
+    contact_type : str = Field(..., alias='TYPE')
+    created_at : datetime.datetime = Field(..., alias='DATEINSERTED')
+    created_by : str = Field(..., alias='ADDEDBY')
+    created_by_id : int = Field(..., alias='ADDEDBYCONTACTID')
+    updated_at : Optional[datetime.datetime] = Field(..., alias='DATEUPDATED')
+    updated_by : Optional[str] = Field(..., alias='UPDATEDBY') 
+    updated_by_id : int = Field(..., alias='UPDATEDBYCONTACTID')
+    attachment : Optional[str] = Field(..., alias='ATTACHMENT')
+    count : int = Field(..., alias='COUNT')
 
 
 class ContactAPI(Client):
@@ -61,7 +79,7 @@ class ContactAPI(Client):
         response = self.post('contact', payload)
         json_response = response.json()
         if response.status_code != 200:
-            raise CreateContactFailedException(json_response.get('MESSAGES'))
+            raise CreateContactFailedException(json_response.get('DETAILS'))
 
         return int(json_response.get('CONTACTID'))
 
@@ -76,6 +94,10 @@ class ContactAPI(Client):
             raise CreateContactNoteFailedException(json_response.get('MESSAGES'))
 
         return int(json_response.get('NOTEID'))
+
+    def search_contact_notes(self, contact_id, q=None) -> List[Note]:
+        payload = {'search': q}
+        response = self.get(f'contact/notes/{contact_id}')
 
     def add_portfolio(self, contact_id, portfolio_type: int):
         payload = {
