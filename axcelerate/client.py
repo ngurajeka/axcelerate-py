@@ -23,9 +23,9 @@ class Client(object):
             'apitoken': self.apitoken,
         }
 
-    def get(self, url: str) -> Response:
+    def get(self, url: str, params: dict = None) -> Response:
         url = '%s/%s' % (self.base_url, url)
-        return requests.get(url, headers=self.headers)
+        return requests.get(url, headers=self.headers, params=params)
 
     def post(self, url: str, payload: dict) -> Response:
         url = '%s/%s' % (self.base_url, url)

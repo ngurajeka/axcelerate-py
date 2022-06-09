@@ -1,7 +1,7 @@
 import datetime
 
 from axcelerate.client import Client
-from axcelerate.exceptions import CreateContactFailedException, CreateContactNoteFailedException, \
+from axcelerate.exceptions import ContactNotFoundException, CreateContactFailedException, CreateContactNoteFailedException, \
     CreateContactPortfolioFailedException
 from axcelerate.file import File
 from pydantic import BaseModel, Field
@@ -9,6 +9,7 @@ from typing import List, Optional
 
 
 class Contact(object):
+    id: int = None
     given_name: str = ''
     surname: str = ''
     email_address: str = ''
@@ -40,10 +41,9 @@ class Note(BaseModel):
 
 class ContactAPI(Client):
 
-    def get_contact(self, contact_id) -> Contact:
-        response = self.get('contact/%d' % contact_id)
-        json_response = response.json()
+    def _build_response(self, json_response):
         contact = Contact()
+        contact.id = json_response.get('CONTACTID')
         contact.given_name = json_response.get('GIVENNAME')
         contact.surname = json_response.get('SURNAME')
         contact.email_address = json_response.get('EMAILADDRESS')
@@ -56,6 +56,24 @@ class ContactAPI(Client):
         contact.address1 = json_response.get('ADDRESS1', None)
         contact.address2 = json_response.get('ADDRESS2', None)
         return contact
+
+    def get_contact(self, contact_id) -> Contact:
+        response = self.get('contact/%d' % contact_id)
+        if response.status_code != 200:
+            raise ContactNotFoundException()
+
+        json_response = response.json()
+        return self._build_response(json_response)
+
+    def search_contact(self, params) -> list:
+        response = self.get('contacts/search', params=params)
+        if response.status_code != 200:
+            return []
+        responses = response.json()
+        contacts = []
+        for json_response in responses:
+            contacts.append(self._build_response(json_response))
+        return contacts
 
     def add_contact(self, contact: Contact) -> int:
         payload = {
