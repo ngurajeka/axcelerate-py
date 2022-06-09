@@ -24,7 +24,7 @@ class Contact(object):
     custom_fields = {}
 
 
-class Note(BaseModel):
+class ContactNote(BaseModel):
     id : int = Field(..., alias='ID'),
     row_id : int = Field(..., alias='ROWID'),
     text : str = Field(..., alias='TEXT')
@@ -34,7 +34,7 @@ class Note(BaseModel):
     created_by_id : int = Field(..., alias='ADDEDBYCONTACTID')
     updated_at : Optional[datetime.datetime] = Field(..., alias='DATEUPDATED')
     updated_by : Optional[str] = Field(..., alias='UPDATEDBY') 
-    updated_by_id : int = Field(..., alias='UPDATEDBYCONTACTID')
+    updated_by_id : Optional[int] = Field(..., alias='UPDATEDBYCONTACTID')
     attachment : Optional[str] = Field(..., alias='ATTACHMENT')
     count : int = Field(..., alias='COUNT')
 
@@ -113,9 +113,16 @@ class ContactAPI(Client):
 
         return int(json_response.get('NOTEID'))
 
-    def search_contact_notes(self, contact_id, q=None) -> List[Note]:
-        payload = {'search': q}
-        response = self.get(f'contact/notes/{contact_id}')
+    def search_contact_notes(self, contact_id, q=None) -> List[ContactNote]:
+        params = {'search': q}
+        response = self.get(f'contact/notes/{contact_id}', params=params)
+        if response.status_code != 200:
+            return []
+
+        contact_notes = []
+        for json_response in response.json():
+            contact_notes.append(ContactNote(**json_response))
+        return contact_notes
 
     def add_portfolio(self, contact_id, portfolio_type: int):
         payload = {
