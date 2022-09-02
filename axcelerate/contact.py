@@ -1,61 +1,71 @@
 import datetime
+import re
 
 from axcelerate.client import Client
 from axcelerate.exceptions import ContactNotFoundException, CreateContactFailedException, CreateContactNoteFailedException, \
     CreateContactPortfolioFailedException
 from axcelerate.file import File
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
-class Contact(object):
-    id: int = None
-    given_name: str = ''
-    surname: str = ''
-    email_address: str = ''
-    mobile_phone: str = ''
-    categories: list = []
-    contact_active: bool = True
-    dob: datetime.date = None
-    address1: str = None
-    address2: str = None
-    country: str = None
-    source_code_id: int = None
-    custom_fields = {}
+class Contact(BaseModel):
+    id: int = Field(..., alias='CONTACTID')
+    given_name: str = Field(..., alias='GIVENNAME')
+    surname: str = Field(..., alias='SURNAME')
+    email_address: str = Field(..., alias='EMAILADDRESS')
+    mobile_phone: str = Field(..., alias='MOBILEPHONE')
+    categories: List[int] = Field(..., alias='CATEGORYIDS')
+    contact_active: bool = Field(..., alias='CONTACTACTIVE')
+    dob: Optional[datetime.date] = Field(..., alias='DOB')
+    address1: Optional[str] = Field(..., alias='ADDRESS1')
+    address2: Optional[str] = Field(..., alias='ADDRESS2')
+    country: Optional[str] = Field(..., alias='COUNTRY')
+    source_code_id: Optional[int] = Field(..., alias='SOURCECODEID')
+    custom_fields: Dict = {}
+
+    def generate_payload(self, custom_fields: List[str] = []):
+        payload = self.dict(exclude={'given_name', 'email_address', 'mobile_phone', 'categories', 'source_code_id', 'contact_active', 'custom_fields'})
+        payload['givenName'] = self.given_name
+        payload['emailAddress'] = self.email_address
+        payload['mobilephone'] = self.mobile_phone
+        payload['categoryIDs'] = self.categories
+        payload['ContactActive'] = self.contact_active
+
+        for field in custom_fields:
+            field = field.upper()
+            value = self.custom_fields.get(field)
+            payload[f'customField_{field}'] = value
+
+        return payload
+
+    @staticmethod
+    def build(json_data: dict):
+        custom_fields = [key for key in json_data.keys() if re.match('CUSTOMFIELD_+', key)]
+        custom_fields_data = {}
+        for key in custom_fields:
+            custom_fields_data[key[12:]] = json_data.pop(key)
+        contact = Contact(**json_data)
+        contact.custom_fields = custom_fields_data
+        return contact
 
 
 class ContactNote(BaseModel):
-    id : int = Field(..., alias='ID'),
-    row_id : int = Field(..., alias='ROWID'),
-    text : str = Field(..., alias='TEXT')
-    contact_type : str = Field(..., alias='TYPE')
-    created_at : datetime.datetime = Field(..., alias='DATEINSERTED')
-    created_by : str = Field(..., alias='ADDEDBY')
-    created_by_id : int = Field(..., alias='ADDEDBYCONTACTID')
-    updated_at : Optional[datetime.datetime] = Field(..., alias='DATEUPDATED')
-    updated_by : Optional[str] = Field(..., alias='UPDATEDBY') 
-    updated_by_id : Optional[int] = Field(..., alias='UPDATEDBYCONTACTID')
-    attachment : Optional[str] = Field(..., alias='ATTACHMENT')
-    count : int = Field(..., alias='COUNT')
+    id: int = Field(..., alias='NOTEID'),
+    row_id: int = Field(..., alias='ROWID'),
+    text: str = Field(..., alias='TEXT')
+    contact_type: str = Field(..., alias='TYPE')
+    created_at: datetime.datetime = Field(..., alias='DATEINSERTED')
+    created_by: str = Field(..., alias='ADDEDBY')
+    created_by_id: int = Field(..., alias='ADDEDBYCONTACTID')
+    updated_at: Optional[datetime.datetime] = Field(..., alias='DATEUPDATED')
+    updated_by: Optional[str] = Field(..., alias='UPDATEDBY') 
+    updated_by_id: Optional[int] = Field(..., alias='UPDATEDBYCONTACTID')
+    attachment: Optional[str] = Field(..., alias='ATTACHMENT')
+    count: int = Field(..., alias='COUNT')
 
 
 class ContactAPI(Client):
-
-    def _build_response(self, json_response):
-        contact = Contact()
-        contact.id = json_response.get('CONTACTID')
-        contact.given_name = json_response.get('GIVENNAME')
-        contact.surname = json_response.get('SURNAME')
-        contact.email_address = json_response.get('EMAILADDRESS')
-        contact.mobile_phone = json_response.get('MOBILEPHONE')
-        contact.categories = json_response.get('CATEGORYIDS', [])
-        contact.source_code_id = json_response.get('SOURCECODEID', None)
-        contact.contact_active = json_response.get('CONTACTACTIVE', True)
-        contact.dob = json_response.get('DOB', None)
-        contact.country = json_response.get('COUNTRY', None)
-        contact.address1 = json_response.get('ADDRESS1', None)
-        contact.address2 = json_response.get('ADDRESS2', None)
-        return contact
 
     def get_contact(self, contact_id) -> Contact:
         response = self.get('contact/%d' % contact_id)
@@ -63,43 +73,31 @@ class ContactAPI(Client):
             raise ContactNotFoundException()
 
         json_response = response.json()
-        return self._build_response(json_response)
+        return Contact.build(json_response)
 
-    def search_contact(self, params) -> list:
+    def search_contact(self, params) -> List[Contact]:
         response = self.get('contacts/search', params=params)
         if response.status_code != 200:
             return []
         responses = response.json()
-        contacts = []
-        for json_response in responses:
-            contacts.append(self._build_response(json_response))
+        contacts = list(map(lambda x: Contact.build(x), responses))
         return contacts
 
-    def add_contact(self, contact: Contact) -> int:
-        payload = {
-            'givenName': contact.given_name,
-            'surname': contact.surname,
-            'emailAddress': contact.email_address,
-            'mobilephone': contact.mobile_phone,
-            'categoryIDs': contact.categories,
-            'SourceCodeID': contact.source_code_id,
-            'ContactActive': contact.contact_active,
-            'dob': contact.dob,
-            'country': contact.country,
-            'address1': contact.address1,
-            'address2': contact.address2,
-        }
-
-        for field, value in contact.custom_fields.items():
-            key = 'customField_%s' % field
-            payload[key] = value
-
-        response = self.post('contact', payload)
+    def add_contact(self, contact: Contact, custom_fields: List[str] = []) -> int:
+        response = self.post('contact', contact.generate_payload(custom_fields))
         json_response = response.json()
         if response.status_code != 200:
             raise CreateContactFailedException(json_response.get('DETAILS'))
 
-        return int(json_response.get('CONTACTID'))
+        return Contact.build(json_response).id
+
+    def update_contact(self, contact: Contact, custom_fields: List[str] = []) -> Contact:
+        response = self.put(f'contact/{contact.id}', contact.generate_payload(custom_fields))
+        json_response = response.json()
+        if response.status_code != 200:
+            raise CreateContactFailedException(json_response.get('DETAILS'))
+
+        return Contact.build(json_response)
 
     def add_contact_notes(self, contact_id, note) -> int:
         payload = {
@@ -111,7 +109,7 @@ class ContactAPI(Client):
         if response.status_code != 200:
             raise CreateContactNoteFailedException(json_response.get('MESSAGES'))
 
-        return int(json_response.get('NOTEID'))
+        return ContactNote(**json_response).id
 
     def search_contact_notes(self, contact_id, q=None) -> List[ContactNote]:
         params = {'search': q}
@@ -119,10 +117,7 @@ class ContactAPI(Client):
         if response.status_code != 200:
             return []
 
-        contact_notes = []
-        for json_response in response.json():
-            contact_notes.append(ContactNote(**json_response))
-        return contact_notes
+        return list(map(lambda x: ContactNote(**x), response.json()))
 
     def add_portfolio(self, contact_id, portfolio_type: int):
         payload = {

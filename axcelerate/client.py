@@ -8,10 +8,10 @@ BASE_URL = 'https://admin.axcelerate.com.au/api'
 
 class Client(object):
 
-    def __init__(self, wstoken: str, apitoken: str):
+    def __init__(self, wstoken: str, apitoken: str, base_url=BASE_URL):
         self.wstoken = wstoken
         self.apitoken = apitoken
-        self.base_url = BASE_URL
+        self.base_url = base_url
 
     def set_base_url(self, base_url):
         self.base_url = base_url
@@ -30,6 +30,10 @@ class Client(object):
     def post(self, url: str, payload: dict) -> Response:
         url = '%s/%s' % (self.base_url, url)
         return requests.post(url, data=payload, headers=self.headers)
+
+    def put(self, url: str, payload: dict) -> Response:
+        url = '%s/%s' % (self.base_url, url)
+        return requests.put(url, data=payload, headers=self.headers)
 
     def upload(self, url: str, payload: dict, file: File) -> Response:
         url = '%s/%s' % (self.base_url, url)

@@ -4,3 +4,5 @@
 /build/
 *.pyc
 /env/
+.env
+.pytest_cache
