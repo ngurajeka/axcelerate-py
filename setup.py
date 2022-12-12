@@ -7,6 +7,7 @@ install_requires = ['requests==2.25.0', ]
 
 tests_require = [
     'requests',
+    'pydantic==1.9.1',
     'pytest==6.1.2',
 ]
 
