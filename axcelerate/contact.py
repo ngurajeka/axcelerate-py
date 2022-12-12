@@ -48,18 +48,18 @@ class Contact(BaseModel):
 
 
 class ContactNote(BaseModel):
-    id: int = Field(..., alias='NOTEID'),
-    row_id: int = Field(..., alias='ROWID'),
-    text: str = Field(..., alias='TEXT')
-    contact_type: str = Field(..., alias='TYPE')
-    created_at: datetime.datetime = Field(..., alias='DATEINSERTED')
-    created_by: str = Field(..., alias='ADDEDBY')
-    created_by_id: int = Field(..., alias='ADDEDBYCONTACTID')
-    updated_at: Optional[datetime.datetime] = Field(..., alias='DATEUPDATED')
-    updated_by: Optional[str] = Field(..., alias='UPDATEDBY') 
-    updated_by_id: Optional[int] = Field(..., alias='UPDATEDBYCONTACTID')
-    attachment: Optional[str] = Field(..., alias='ATTACHMENT')
-    count: int = Field(..., alias='COUNT')
+    id: Optional[int] = Field(alias='NOTEID', default=None),
+    row_id: int = Field(alias='ROWID'),
+    text: str = Field(alias='TEXT')
+    contact_type: str = Field(alias='TYPE')
+    created_at: datetime.datetime = Field(alias='DATEINSERTED')
+    created_by: str = Field(alias='ADDEDBY')
+    created_by_id: int = Field(alias='ADDEDBYCONTACTID')
+    updated_at: Optional[datetime.datetime] = Field(alias='DATEUPDATED', default=None)
+    updated_by: Optional[str] = Field(alias='UPDATEDBY', default=None)
+    updated_by_id: Optional[int] = Field(alias='UPDATEDBYCONTACTID', default=None)
+    attachment: Optional[str] = Field(alias='ATTACHMENT', default=None)
+    count: int = Field(alias='COUNT')
 
 
 class ContactAPI(Client):
@@ -106,7 +106,7 @@ class ContactAPI(Client):
         if response.status_code != 200:
             raise CreateContactNoteFailedException(json_response.get('MESSAGES'))
 
-        return ContactNote(**json_response).id
+        return int(json_response.get('NOTEID'))
 
     def search_contact_notes(self, contact_id, q=None) -> List[ContactNote]:
         params = {'search': q}
