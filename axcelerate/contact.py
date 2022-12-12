@@ -80,8 +80,8 @@ class ContactAPI(Client):
         contacts = list(map(lambda x: Contact.build(x), responses))
         return contacts
 
-    def add_contact(self, contact: Contact, custom_fields: List[str] = []) -> int:
-        response = self.post('contact', contact.generate_payload(custom_fields))
+    def add_contact(self, contact: Contact) -> int:
+        response = self.post('contact', contact.generate_payload())
         json_response = response.json()
         if response.status_code != 200:
             raise CreateContactFailedException(json_response.get('DETAILS'))
