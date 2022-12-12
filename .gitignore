@@ -4,3 +4,8 @@
 /build/
 *.pyc
 /env/
+.idea
+test_contact.py
+.pytest_cache
+__pycache__
+*.egg-info

@@ -12,7 +12,7 @@ tests_require = [
 
 setuptools.setup(
     name='axcelerate',
-    version='2.1.0',
+    version='2.1.1',
     description='Axcelerate API Wrapper',
     url='https://github.com/ngurajeka/axcelerate-py',
     author='Ady Rahmat MA',

@@ -1,6 +1,6 @@
 import datetime
 from axcelerate.client import Client
-from axcelerate.exceptions import ContactNotFoundException, CreateContactFailedException, CreateContactNoteFailedException, \
+from axcelerate.exceptions import ContactNotFoundException, ContactPortfolioNotFoundException, CreateContactFailedException, CreateContactNoteFailedException, \
     CreateContactPortfolioFailedException
 from axcelerate.file import File
 
@@ -106,6 +106,21 @@ class ContactAPI(Client):
             raise CreateContactPortfolioFailedException(json_response.get('MESSAGES'))
 
         return int(json_response.get('PORTFOLIOID'))
+
+    def get_portfolio(self, contact_id, portfolio_type: int):
+        params = {
+            'contactID': contact_id,
+            'portfolioTypeID': portfolio_type,
+        }
+        response = self.get('contact/portfolio', params)
+        json_response = response.json()
+        if response.status_code != 200:
+            raise ContactPortfolioNotFoundException(json_response.get('MESSAGES'))
+
+        if len(json_response) == 0:
+            raise ContactPortfolioNotFoundException()
+
+        return int(json_response[0].get('PORTFOLIOID'))
 
     def add_portfolio_file(self, contact_id: int, portfolio_id: int, portfolio: File):
         payload = {

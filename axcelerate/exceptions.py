@@ -12,3 +12,7 @@ class CreateContactNoteFailedException(Exception):
 
 class CreateContactPortfolioFailedException(Exception):
     pass
+
+
+class ContactPortfolioNotFoundException(Exception):
+    pass
