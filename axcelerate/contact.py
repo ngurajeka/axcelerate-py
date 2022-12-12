@@ -10,32 +10,29 @@ from typing import Dict, List, Optional
 
 
 class Contact(BaseModel):
-    id: int = Field(..., alias='CONTACTID')
-    given_name: str = Field(..., alias='GIVENNAME')
-    surname: str = Field(..., alias='SURNAME')
-    email_address: str = Field(..., alias='EMAILADDRESS')
-    mobile_phone: str = Field(..., alias='MOBILEPHONE')
-    categories: List[int] = Field(..., alias='CATEGORYIDS')
-    contact_active: bool = Field(..., alias='CONTACTACTIVE')
-    dob: Optional[datetime.date] = Field(..., alias='DOB')
-    address1: Optional[str] = Field(..., alias='ADDRESS1')
-    address2: Optional[str] = Field(..., alias='ADDRESS2')
-    country: Optional[str] = Field(..., alias='COUNTRY')
-    source_code_id: Optional[int] = Field(..., alias='SOURCECODEID')
+    id: Optional[int] = Field(alias='CONTACTID', default=None)
+    given_name: str = Field(alias='GIVENNAME')
+    surname: str = Field(alias='SURNAME')
+    email_address: str = Field(alias='EMAILADDRESS')
+    mobile_phone: Optional[str] = Field(alias='MOBILEPHONE', default=None)
+    categories: List[int] = Field(alias='CATEGORYIDS', default=[])
+    contact_active: bool = Field(alias='CONTACTACTIVE', default=True)
+    dob: Optional[datetime.date] = Field(alias='DOB', default=None)
+    address1: Optional[str] = Field(alias='ADDRESS1', default=None)
+    address2: Optional[str] = Field(alias='ADDRESS2', default=None)
+    country: Optional[str] = Field(alias='COUNTRY', default=None)
+    source_code_id: Optional[int] = Field(alias='SOURCECODEID', default=None)
     custom_fields: Dict = {}
 
-    def generate_payload(self, custom_fields: List[str] = []):
-        payload = self.dict(exclude={'given_name', 'email_address', 'mobile_phone', 'categories', 'source_code_id', 'contact_active', 'custom_fields'})
-        payload['givenName'] = self.given_name
-        payload['emailAddress'] = self.email_address
-        payload['mobilephone'] = self.mobile_phone
-        payload['categoryIDs'] = self.categories
-        payload['ContactActive'] = self.contact_active
+    class Config:
+        allow_population_by_field_name = True
 
-        for field in custom_fields:
-            field = field.upper()
+    def generate_payload(self):
+        payload = self.dict(by_alias=True, exclude={'contact_active', 'custom_fields'})
+
+        for field in self.custom_fields:
             value = self.custom_fields.get(field)
-            payload[f'customField_{field}'] = value
+            payload[f'customField_{field}'.upper()] = value
 
         return payload
 
@@ -45,7 +42,7 @@ class Contact(BaseModel):
         custom_fields_data = {}
         for key in custom_fields:
             custom_fields_data[key[12:]] = json_data.pop(key)
-        contact = Contact(**json_data)
+        contact = Contact.parse_obj(json_data)
         contact.custom_fields = custom_fields_data
         return contact
 
